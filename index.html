@@ -39,6 +39,10 @@ button{font:inherit;border:0;border-radius:12px;padding:13px 15px;cursor:pointer
 .speak-button:hover{background:#e2efff}
 .speaker-small{width:auto!important;min-width:44px;padding:8px 10px!important;margin:0!important;background:#eef6ff!important;color:#2457a7!important;border:1px solid #cfe0ff!important;border-radius:10px!important;font-weight:800}
 .row-actions{display:flex;gap:6px;align-items:center;margin-left:auto}
+.study-tools{display:grid;gap:10px;margin:12px 0}
+.study-nav{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}
+.study-nav button{width:100%;font-weight:700}
+button:disabled{opacity:.42;cursor:not-allowed;transform:none}
 .counter{color:var(--muted);font-size:14px} .feedback{min-height:28px;font-weight:800;margin-top:14px}
 .quiz-options{display:grid;gap:9px;margin-top:14px} .quiz-options button{background:#f4f6f9;text-align:left} .quiz-options button.correct{background:#def5e6;color:#177a41} .quiz-options button.wrong{background:#ffe2e2;color:#b92c2c}
 .word-list{display:grid;gap:8px;max-height:520px;overflow:auto;margin-top:12px} .word-row{display:flex;gap:10px;align-items:flex-start;text-align:left;background:#f7f8fb;border-radius:12px;padding:11px 12px} .word-row .n{width:30px;color:#9ca3af} .word-row .en{font-weight:800;min-width:120px} .word-row .ko{color:#4b5563;flex:1}
@@ -112,8 +116,14 @@ button{font:inherit;border:0;border-radius:12px;padding:13px 15px;cursor:pointer
   <div class="counter" id="study-counter"></div>
   <div class="progress-wrap"><div class="progress-bar"><div id="study-progress" class="progress-fill"></div></div></div>
   <div class="word-card"><div class="word" id="study-word"></div><div class="meaning" id="study-meaning"></div></div>
-  <button class="speak-button" onclick="speakStudyWord()">🔊 영어 발음 듣기</button>
-  <button class="secondary" onclick="toggleMeaning()">뜻 보기 / 숨기기</button>
+  <div class="study-tools">
+    <button class="speak-button" onclick="speakStudyWord()">🔊 영어 발음 듣기</button>
+    <button class="secondary" onclick="toggleMeaning()">뜻 보기 / 숨기기</button>
+  </div>
+  <div class="study-nav">
+    <button id="study-prev" class="gray" onclick="moveStudyWord(-1)">← 이전 단어</button>
+    <button id="study-next" class="gray" onclick="moveStudyWord(1)">다음 단어 →</button>
+  </div>
   <div class="actions"><button class="green" onclick="rateWord(true)">👍 알아요</button><button class="red" onclick="rateWord(false)">👎 몰라요</button></div>
   <div class="small" id="study-score"></div>
 </section>
@@ -152,8 +162,10 @@ button{font:inherit;border:0;border-radius:12px;padding:13px 15px;cursor:pointer
   <div class="topbar"><button class="gray" onclick="wrongStudyBack()">←</button><h2 id="wrong-study-title">🔄 오답 재학습</h2><button class="gray" onclick="showScreen('home')">홈</button></div>
   <div class="counter" id="wrong-counter"></div>
   <div class="word-card"><div class="word" id="wrong-word"></div><div class="meaning" id="wrong-meaning"></div></div>
-  <button class="speak-button" onclick="speakWrongStudyWord()">🔊 영어 발음 듣기</button>
-  <button class="secondary" onclick="toggleWrongMeaning()">뜻 보기 / 숨기기</button>
+  <div class="study-tools">
+    <button class="speak-button" onclick="speakWrongStudyWord()">🔊 영어 발음 듣기</button>
+    <button class="secondary" onclick="toggleWrongMeaning()">뜻 보기 / 숨기기</button>
+  </div>
   <div class="actions"><button class="green" onclick="rateWrong(true)">👍 이제 알아요</button><button class="red" onclick="rateWrong(false)">👎 아직 몰라요</button></div>
 </section>
 
@@ -193,6 +205,8 @@ let dayWrongWords={};
 let currentDay=0;
 let studyList=[];
 let studyIndex=0;
+let studyMaxVisited=0;
+let studyRatings=[];
 let studyKnow=0;
 let studyDont=0;
 let quizList=[];
@@ -291,14 +305,83 @@ function speakWrongStudyWord(){
   if(wrongStudyList[wrongStudyIndex])speakWord(wrongStudyList[wrongStudyIndex].word);
 }
 
-function startStudyForDay(){studyList=getDayWords(currentDay).slice();studyIndex=0;studyKnow=0;studyDont=0;document.getElementById('study-title').textContent='Day '+(currentDay+1)+' 암기';showScreen('study');renderStudy();}
-function renderStudy(){if(studyIndex>=studyList.length){finishStudy();return;}const w=studyList[studyIndex];document.getElementById('study-word').textContent=w.word;const m=document.getElementById('study-meaning');m.textContent=w.meaning;m.style.display='none';document.getElementById('study-counter').textContent=`${studyIndex+1} / ${studyList.length}`;document.getElementById('study-progress').style.width=((studyIndex)/studyList.length*100)+'%';document.getElementById('study-score').textContent=`알아요 ${studyKnow} · 몰라요 ${studyDont}`;}
-function toggleMeaning(){const el=document.getElementById('study-meaning');el.style.display=el.style.display==='block'?'none':'block';}
-function rateWord(know){const w=studyList[studyIndex];if(know){studyKnow++;removeWrongFromDay(w.word,currentDay);}else{studyDont++;addWrong(w,currentDay);}studyIndex++;renderStudy();}
-function finishStudy(){document.getElementById('study-progress').style.width='100%';if(!completedDays.includes(currentDay)){completedDays.push(currentDay);completedDays.sort((a,b)=>a-b);saveProgress();}alert(`Day ${currentDay+1} 암기 완료!
+function startStudyForDay(){
+  studyList=getDayWords(currentDay).slice();
+  studyIndex=0;
+  studyMaxVisited=0;
+  studyRatings=new Array(studyList.length).fill(null);
+  studyKnow=0;
+  studyDont=0;
+  document.getElementById('study-title').textContent='Day '+(currentDay+1)+' 암기';
+  showScreen('study');
+  renderStudy();
+}
+function updateStudyCounts(){
+  studyKnow=studyRatings.filter(v=>v===true).length;
+  studyDont=studyRatings.filter(v=>v===false).length;
+}
+function renderStudy(){
+  if(!studyList.length){openDay(currentDay);return;}
+  studyIndex=Math.max(0,Math.min(studyIndex,studyList.length-1));
+  const w=studyList[studyIndex];
+  document.getElementById('study-word').textContent=w.word;
+  const m=document.getElementById('study-meaning');
+  m.textContent=w.meaning;
+  m.style.display='none';
+  document.getElementById('study-counter').textContent=`${studyIndex+1} / ${studyList.length}`;
+  const ratedCount=studyRatings.filter(v=>v!==null).length;
+  document.getElementById('study-progress').style.width=(ratedCount/studyList.length*100)+'%';
+  updateStudyCounts();
+  document.getElementById('study-score').textContent=`알아요 ${studyKnow} · 몰라요 ${studyDont}`;
+  const prev=document.getElementById('study-prev');
+  const next=document.getElementById('study-next');
+  if(prev)prev.disabled=studyIndex<=0;
+  if(next)next.disabled=studyIndex>=studyMaxVisited;
+}
+function toggleMeaning(){
+  const el=document.getElementById('study-meaning');
+  el.style.display=el.style.display==='block'?'none':'block';
+}
+function moveStudyWord(step){
+  const target=studyIndex+step;
+  if(target<0||target>=studyList.length)return;
+  // 아직 학습하지 않은 미래 단어를 화살표로 건너뛰지는 않음.
+  // '알아요/몰라요'로 새 단어를 학습하면 이동 가능 범위가 자동으로 늘어남.
+  if(target>studyMaxVisited)return;
+  studyIndex=target;
+  renderStudy();
+}
+function rateWord(know){
+  const w=studyList[studyIndex];
+  studyRatings[studyIndex]=know;
+  if(know){
+    removeWrongFromDay(w.word,currentDay);
+  }else{
+    addWrong(w,currentDay);
+  }
+  updateStudyCounts();
+
+  if(studyIndex<studyList.length-1){
+    studyIndex++;
+    if(studyIndex>studyMaxVisited)studyMaxVisited=studyIndex;
+    renderStudy();
+  }else{
+    finishStudy();
+  }
+}
+function finishStudy(){
+  document.getElementById('study-progress').style.width='100%';
+  if(!completedDays.includes(currentDay)){
+    completedDays.push(currentDay);
+    completedDays.sort((a,b)=>a-b);
+    saveProgress();
+  }
+  alert(`Day ${currentDay+1} 암기 완료!
 
 👍 알아요: ${studyKnow}개
-👎 몰라요: ${studyDont}개`);openDay(currentDay);}
+👎 몰라요: ${studyDont}개`);
+  openDay(currentDay);
+}
 
 function startQuizForDay(){const base=getDayWords(currentDay);if(base.length<4){alert('테스트를 위해 최소 4개의 단어가 필요합니다.');return;}quizList=shuffle(base.slice());quizIndex=0;quizCorrect=0;quizWrong=0;document.getElementById('quiz-title').textContent='Day '+(currentDay+1)+' 테스트';showScreen('quiz');renderQuiz();}
 function renderQuiz(){if(quizIndex>=quizList.length){finishQuiz();return;}quizAnswered=false;const w=quizList[quizIndex];document.getElementById('quiz-counter').textContent=`${quizIndex+1} / ${quizList.length}`;document.getElementById('quiz-word').textContent=w.word;document.getElementById('quiz-feedback').textContent='';document.getElementById('quiz-next').style.display='none';document.getElementById('quiz-score').textContent=`정답 ${quizCorrect} · 오답 ${quizWrong}`;const area=document.getElementById('quiz-options');area.innerHTML='';let candidates=words.filter(x=>x.word!==w.word&&x.meaning!==w.meaning).map(x=>x.meaning);candidates=shuffle([...new Set(candidates)]);let opts=shuffle([w.meaning,...candidates.slice(0,3)]);opts.forEach(opt=>{const b=document.createElement('button');b.textContent=opt;b.onclick=()=>selectQuiz(opt,b);area.appendChild(b);});}
