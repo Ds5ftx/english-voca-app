@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#4a7cff">
+  <title>영어단어 암기 App</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, "Noto Sans KR", "Apple SD Gothic Neo", sans-serif;
+      background: #f3f6fb;
+      color: #222;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 24px 12px;
+    }
+
+    .app {
+      width: 420px;
+      max-width: 100%;
+      background: #fff;
+      padding: 28px;
+      border-radius: 22px;
+      box-shadow: 0 12px 34px rgba(0,0,0,.10);
+      text-align: center;
+    }
+
+    h1, h2, h3 { margin-top: 0; }
+    h1 { font-size: 28px; margin-bottom: 10px; }
+    h2 { font-size: 24px; }
+
+    .subtitle {
+      color: #666;
+      line-height: 1.6;
+      margin-bottom: 22px;
+    }
+
+    .progress-box,
+    .result-box,
+    .info-box {
+      background: #f6f8fc;
+      border-radius: 14px;
+      padding: 16px;
+      margin: 16px 0;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .stat-card {
+      background: #eef3ff;
+      border-radius: 12px;
+      padding: 14px 10px;
+    }
+
+    .stat-card .label {
+      display: block;
+      color: #666;
+      font-size: 13px;
+      margin-bottom: 6px;
+    }
+
+    .stat-card strong {
+      font-size: 22px;
+    }
+
+    button {
+      width: 100%;
+      padding: 14px 16px;
+      margin-top: 11px;
+      border: 0;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform .05s ease, opacity .2s ease;
+    }
+
+    button:active { transform: scale(.99); }
+    button:disabled { cursor: default; opacity: .88; }
+
+    .start-button { background: #4a7cff; color: #fff; }
+    .test-button { background: #e8eeff; color: #315dcc; }
+    .wrong-button { background: #fff0f0; color: #c63d3d; }
+    .manage-button { background: #f0eaff; color: #7048c8; }
+    .review-button { background: #ff9800; color: #fff; }
+    .meaning-button { background: #4a7cff; color: #fff; }
+    .know-button { background: #28a745; color: #fff; }
+    .dont-know-button { background: #dc3545; color: #fff; }
+    .back-button { background: #eeeeee; color: #333; }
+    .next-button { background: #4a7cff; color: #fff; }
+    .add-button { background: #7048c8; color: #fff; }
+    .import-button { background: #13795b; color: #fff; }
+
+    .word {
+      font-size: 40px;
+      font-weight: 800;
+      margin: 26px 0 22px;
+      overflow-wrap: anywhere;
+    }
+
+    .meaning {
+      display: none;
+      font-size: 22px;
+      line-height: 1.6;
+      margin: 18px 0;
+      padding: 14px;
+      border-radius: 12px;
+      background: #f6f8fc;
+    }
+
+    .counter { color: #777; margin: 8px 0; }
+    .mode-title { color: #4a7cff; font-weight: 800; }
+
+    .wrong-item,
+    .word-item {
+      padding: 14px;
+      margin-bottom: 10px;
+      border-radius: 12px;
+      text-align: left;
+    }
+
+    .wrong-item { background: #fff4f4; }
+
+    .word-item {
+      background: #f5f6fa;
+      display: flex;
+      gap: 12px;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .word-text { min-width: 0; flex: 1; }
+    .saved-word, .wrong-word { font-size: 18px; font-weight: 800; overflow-wrap: anywhere; }
+    .saved-meaning, .wrong-meaning { color: #555; margin-top: 5px; line-height: 1.45; }
+
+    .delete-button {
+      width: auto;
+      flex: 0 0 auto;
+      margin: 0;
+      padding: 8px 11px;
+      background: #ffe1e1;
+      color: #c82333;
+      font-size: 13px;
+    }
+
+    input[type="text"],
+    input[type="file"] {
+      width: 100%;
+      padding: 13px 14px;
+      margin-top: 10px;
+      border: 1px solid #ccd2dc;
+      border-radius: 10px;
+      font-size: 16px;
+      background: #fff;
+    }
+
+    input[type="file"] {
+      padding: 10px;
+      font-size: 14px;
+    }
+
+    .section-divider {
+      margin: 28px 0;
+      border: 0;
+      border-top: 1px solid #e1e5ec;
+    }
+
+    .help-text {
+      font-size: 13px;
+      color: #6b7280;
+      line-height: 1.55;
+      text-align: left;
+      background: #f7f8fb;
+      border-radius: 10px;
+      padding: 12px;
+      margin: 10px 0;
+    }
+
+    .quiz-word {
+      font-size: 38px;
+      font-weight: 800;
+      margin: 24px 0;
+      overflow-wrap: anywhere;
+    }
+
+    .option-button {
+      background: #f1f4f9;
+      color: #333;
+      border: 2px solid transparent;
+    }
+
+    .option-button.correct {
+      background: #dff5e4 !important;
+      color: #198754 !important;
+      border-color: #28a745 !important;
+    }
+
+    .option-button.wrong {
+      background: #ffe1e1 !important;
+      color: #c82333 !important;
+      border-color: #dc3545 !important;
+    }
+
+    .feedback {
+      min-height: 30px;
+      margin-top: 16px;
+      font-size: 17px;
+      font-weight: 800;
+      line-height: 1.5;
+    }
+
+    .empty-message {
+      color: #666;
+      background: #f7f8fb;
+      border-radius: 12px;
+      padding: 18px;
+    }
+
+    #study-screen,
+    #quiz-screen,
+    #wrong-screen,
+    #manage-screen {
+      display: none;
+    }
+
+    @media (max-width: 480px) {
+      body { padding: 0; background: #fff; }
+      .app {
+        width: 100%;
+        min-height: 100vh;
+        border-radius: 0;
+        box-shadow: none;
+        padding: 22px 18px 30px;
+      }
+      .word, .quiz-word { font-size: 34px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- 첫 화면 -->
+  <section id="home-screen">
+    <h1>📚 영어단어 암기</h1>
+    <p class="subtitle">영어 단어를 암기하고, 테스트하고, 틀린 단어를 다시 복습해 보세요.</p>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <span class="label">전체 단어</span>
+        <strong id="total-count">0개</strong>
+      </div>
+      <div class="stat-card">
+        <span class="label">오답 단어</span>
+        <strong id="home-wrong-count">0개</strong>
+      </div>
+    </div>
+
+    <button class="start-button" onclick="startNormalStudy()">📖 전체 단어 암기</button>
+    <button class="test-button" onclick="startQuiz()">✏️ 단어 테스트</button>
+    <button class="wrong-button" onclick="openWrongNote()">⭐ 오답노트 (<span id="wrong-count">0</span>)</button>
+    <button class="manage-button" onclick="openManage()">⚙️ 단어장 관리</button>
+  </section>
+
+  <!-- 단어 암기 -->
+  <section id="study-screen">
+    <h2>📖 단어 암기</h2>
+    <div class="mode-title" id="mode-title"></div>
+    <div class="counter" id="counter"></div>
+
+    <div class="word" id="word"></div>
+    <button class="meaning-button" onclick="showMeaning()">뜻 보기</button>
+    <div class="meaning" id="meaning"></div>
+
+    <button class="know-button" onclick="knowWord()">👍 알아요</button>
+    <button class="dont-know-button" onclick="dontKnowWord()">👎 몰라요</button>
+
+    <div class="result-box">
+      👍 알아요 : <strong id="know-count">0</strong>
+      &nbsp;&nbsp;|&nbsp;&nbsp;
+      👎 몰라요 : <strong id="dont-know-count">0</strong>
+    </div>
+
+    <button class="back-button" onclick="goHome()">← 처음으로</button>
+  </section>
+
+  <!-- 단어 테스트 -->
+  <section id="quiz-screen">
+    <h2>✏️ 단어 테스트</h2>
+    <div class="counter" id="quiz-counter"></div>
+    <p>다음 영어 단어의 뜻을 고르세요.</p>
+
+    <div class="quiz-word" id="quiz-word"></div>
+    <div id="option-area"></div>
+    <div class="feedback" id="feedback"></div>
+
+    <button class="next-button" id="quiz-next-button" onclick="nextQuiz()" style="display:none;">다음 문제 →</button>
+
+    <div class="result-box">
+      ✅ 정답 : <strong id="quiz-correct-count">0</strong>
+      &nbsp;&nbsp;|&nbsp;&nbsp;
+      ❌ 오답 : <strong id="quiz-wrong-count">0</strong>
+    </div>
+
+    <button class="back-button" onclick="goHome()">← 처음으로</button>
+  </section>
+
+  <!-- 오답노트 -->
+  <section id="wrong-screen">
+    <h2>⭐ 오답노트</h2>
+    <p class="subtitle">몰랐거나 테스트에서 틀린 단어입니다.</p>
+
+    <div id="wrong-list"></div>
+
+    <button class="review-button" id="review-button" onclick="startWrongStudy()">🔄 오답 단어 다시 암기</button>
+    <button class="back-button" onclick="goHome()">← 처음으로</button>
+  </section>
+
+  <!-- 단어장 관리 -->
+  <section id="manage-screen">
+    <h2>⚙️ 단어장 관리</h2>
+    <p class="subtitle">직접 단어를 추가하거나 CSV 파일을 한꺼번에 불러올 수 있습니다.</p>
+
+    <input type="text" id="new-word" placeholder="영어 단어 예: important">
+    <input type="text" id="new-meaning" placeholder="뜻 예: 중요한">
+    <button class="add-button" onclick="addNewWord()">➕ 단어 추가</button>
+
+    <hr class="section-divider">
+
+    <h3>📥 CSV 단어장 불러오기</h3>
+    <div class="help-text">
+      권장 형식: 첫 줄에 <strong>word,meaning</strong><br>
+      예: <strong>tradition,"전통, 전설"</strong><br>
+      UTF-8 CSV와 일반 Excel 한국어 CSV(CP949/EUC-KR 계열)를 모두 처리합니다.<br>
+      같은 영어 단어가 이미 있으면 새 CSV의 뜻으로 자동 수정합니다.
+    </div>
+
+    <input type="file" id="csv-file" accept=".csv,text/csv">
+    <button class="import-button" onclick="importCSV()">📂 CSV 단어장 불러오기</button>
+
+    <div class="result-box">
+      현재 등록된 단어 : <strong id="manage-count">0</strong>개
+    </div>
+
+    <div id="word-list"></div>
+
+    <button class="back-button" onclick="goHome()">← 처음으로</button>
+  </section>
+
+</div>
+
+<script>
+  // =====================================
+  // 기본 단어
+  // =====================================
+  const defaultWords = [
+    { word: "abandon", meaning: "버리다, 포기하다" },
+    { word: "ability", meaning: "능력" },
+    { word: "abroad", meaning: "해외에" },
+    { word: "accept", meaning: "받아들이다" },
+    { word: "achieve", meaning: "성취하다" }
+  ];
+
+  // =====================================
+  // 상태 변수
+  // =====================================
+  let words = [];
+  let wrongWords = [];
+
+  let studyWords = [];
+  let studyMode = "normal";
+  let currentIndex = 0;
+  let knowCount = 0;
+  let dontKnowCount = 0;
+
+  let quizWords = [];
+  let quizIndex = 0;
+  let quizCorrectCount = 0;
+  let quizWrongCount = 0;
+  let quizAnswered = false;
+
+  // =====================================
+  // 저장 / 불러오기
+  // =====================================
+  function loadWords() {
+    try {
+      const savedWords = localStorage.getItem("englishWords");
+      if (savedWords) {
+        const parsed = JSON.parse(savedWords);
+        words = Array.isArray(parsed) ? parsed : [...defaultWords];
+      } else {
+        words = [...defaultWords];
+        saveWords();
+      }
+    } catch (error) {
+      words = [...defaultWords];
+      saveWords();
+    }
+  }
+
+  function saveWords() {
+    localStorage.setItem("englishWords", JSON.stringify(words));
+  }
+
+  function loadWrongWords() {
+    try {
+      const savedWrong = localStorage.getItem("englishWrongWords");
+      if (savedWrong) {
+        const parsed = JSON.parse(savedWrong);
+        wrongWords = Array.isArray(parsed) ? parsed : [];
+      } else {
+        wrongWords = [];
+      }
+    } catch (error) {
+      wrongWords = [];
+    }
+
+    // 삭제된 단어가 오답노트에 남아 있지 않도록 정리
+    wrongWords = wrongWords.filter(wrongItem =>
+      words.some(wordItem => wordItem.word.toLowerCase() === wrongItem.word.toLowerCase())
+    );
+    saveWrongWords();
+  }
+
+  function saveWrongWords() {
+    localStorage.setItem("englishWrongWords", JSON.stringify(wrongWords));
+  }
+
+  // =====================================
+  // 단어장 관리
+  // =====================================
+  function addNewWord() {
+    const wordInput = document.getElementById("new-word");
+    const meaningInput = document.getElementById("new-meaning");
+
+    const newWord = wordInput.value.trim();
+    const newMeaning = meaningInput.value.trim();
+
+    if (!newWord || !newMeaning) {
+      alert("영어 단어와 뜻을 모두 입력해 주세요.");
+      return;
+    }
+
+    const existingIndex = words.findIndex(
+      item => item.word.toLowerCase() === newWord.toLowerCase()
+    );
+
+    if (existingIndex !== -1) {
+      const replace = confirm("이미 등록된 단어입니다. 뜻을 새 내용으로 수정할까요?");
+      if (!replace) return;
+
+      words[existingIndex].meaning = newMeaning;
+      wrongWords.forEach(item => {
+        if (item.word.toLowerCase() === newWord.toLowerCase()) {
+          item.meaning = newMeaning;
+        }
+      });
+    } else {
+      words.push({ word: newWord, meaning: newMeaning });
+    }
+
+    saveWords();
+    saveWrongWords();
+    wordInput.value = "";
+    meaningInput.value = "";
+    renderWordList();
+    updateHome();
+    wordInput.focus();
+  }
+
+  function deleteWord(index) {
+    const selectedWord = words[index];
+    const ok = confirm(`'${selectedWord.word}' 단어를 삭제하시겠습니까?`);
+    if (!ok) return;
+
+    words.splice(index, 1);
+    wrongWords = wrongWords.filter(
+      item => item.word.toLowerCase() !== selectedWord.word.toLowerCase()
+    );
+
+    saveWords();
+    saveWrongWords();
+    renderWordList();
+    updateHome();
+  }
+
+  function renderWordList() {
+    const wordList = document.getElementById("word-list");
+    document.getElementById("manage-count").textContent = words.length;
+    wordList.innerHTML = "";
+
+    if (words.length === 0) {
+      wordList.innerHTML = '<div class="empty-message">등록된 단어가 없습니다.</div>';
+      return;
+    }
+
+    words.forEach((item, index) => {
+      const box = document.createElement("div");
+      box.className = "word-item";
+
+      const textBox = document.createElement("div");
+      textBox.className = "word-text";
+
+      const wordDiv = document.createElement("div");
+      wordDiv.className = "saved-word";
+      wordDiv.textContent = item.word;
+
+      const meaningDiv = document.createElement("div");
+      meaningDiv.className = "saved-meaning";
+      meaningDiv.textContent = item.meaning;
+
+      const deleteButton = document.createElement("button");
+      deleteButton.className = "delete-button";
+      deleteButton.textContent = "삭제";
+      deleteButton.onclick = () => deleteWord(index);
+
+      textBox.appendChild(wordDiv);
+      textBox.appendChild(meaningDiv);
+      box.appendChild(textBox);
+      box.appendChild(deleteButton);
+      wordList.appendChild(box);
+    });
+  }
+
+  function openManage() {
+    hideAllScreens();
+    document.getElementById("manage-screen").style.display = "block";
+    renderWordList();
+  }
+
+  // =====================================
+  // CSV 가져오기
+  // =====================================
+  function importCSV() {
+    const fileInput = document.getElementById("csv-file");
+    const file = fileInput.files[0];
+
+    if (!file) {
+      alert("CSV 파일을 먼저 선택해 주세요.");
+      return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = function(event) {
+      try {
+        const buffer = event.target.result;
+        const csvText = decodeCsvBuffer(buffer).replace(/^\uFEFF/, "");
+        const rows = parseCSV(csvText);
+
+        if (rows.length === 0) {
+          alert("CSV 파일에 데이터가 없습니다.");
+          return;
+        }
+
+        let startRow = 0;
+        const first = rows[0] || [];
+        const firstWord = (first[0] || "").trim().toLowerCase();
+        const firstMeaning = (first[1] || "").trim().toLowerCase();
+
+        const wordHeaders = ["word", "english", "단어", "영어", "영단어"];
+        const meaningHeaders = ["meaning", "뜻", "korean", "한글", "의미"];
+
+        if (wordHeaders.includes(firstWord) && meaningHeaders.includes(firstMeaning)) {
+          startRow = 1;
+        }
+
+        let addedCount = 0;
+        let updatedCount = 0;
+        let errorCount = 0;
+
+        for (let i = startRow; i < rows.length; i++) {
+          const row = rows[i];
+          if (!row || row.length < 2) {
+            if (row && row.some(cell => cell.trim() !== "")) errorCount++;
+            continue;
+          }
+
+          const newWord = (row[0] || "").trim();
+          const newMeaning = (row[1] || "").trim();
+
+          if (!newWord && !newMeaning) continue;
+          if (!newWord || !newMeaning) {
+            errorCount++;
+            continue;
+          }
+
+          const existingIndex = words.findIndex(
+            item => item.word.toLowerCase() === newWord.toLowerCase()
+          );
+
+          if (existingIndex !== -1) {
+            words[existingIndex].meaning = newMeaning;
+            wrongWords.forEach(item => {
+              if (item.word.toLowerCase() === newWord.toLowerCase()) {
+                item.meaning = newMeaning;
+              }
+            });
+            updatedCount++;
+          } else {
+            words.push({ word: newWord, meaning: newMeaning });
+            addedCount++;
+          }
+        }
+
+        saveWords();
+        saveWrongWords();
+        renderWordList();
+        updateHome();
+
+        alert(
+          "CSV 불러오기 완료!\n\n" +
+          `✅ 새로 추가 : ${addedCount}개\n` +
+          `🔄 기존 단어 수정 : ${updatedCount}개\n` +
+          `❌ 오류 : ${errorCount}개`
+        );
+
+        fileInput.value = "";
+      } catch (error) {
+        console.error(error);
+        alert("CSV 파일을 처리하지 못했습니다. 파일 형식이나 인코딩을 확인해 주세요.");
+      }
+    };
+
+    reader.onerror = function() {
+      alert("파일을 읽는 중 오류가 발생했습니다.");
+    };
+
+    // 문자열이 아니라 원본 바이트로 읽어 인코딩을 자동 판별합니다.
+    reader.readAsArrayBuffer(file);
+  }
+
+  function decodeCsvBuffer(buffer) {
+    // UTF-8을 먼저 엄격하게 시도합니다.
+    try {
+      return new TextDecoder("utf-8", { fatal: true }).decode(buffer);
+    } catch (utf8Error) {
+      // Excel에서 저장한 한국어 CSV(CP949/EUC-KR 계열)를 처리합니다.
+      try {
+        return new TextDecoder("euc-kr").decode(buffer);
+      } catch (koreanError) {
+        throw new Error("지원하지 않는 CSV 인코딩입니다.");
+      }
+    }
+  }
+
+  function parseCSV(text) {
+    const rows = [];
+    let row = [];
+    let value = "";
+    let insideQuotes = false;
+
+    for (let i = 0; i < text.length; i++) {
+      const char = text[i];
+
+      if (char === '"') {
+        if (insideQuotes && text[i + 1] === '"') {
+          value += '"';
+          i++;
+        } else {
+          insideQuotes = !insideQuotes;
+        }
+      } else if (char === "," && !insideQuotes) {
+        row.push(value);
+        value = "";
+      } else if ((char === "\n" || char === "\r") && !insideQuotes) {
+        if (char === "\r" && text[i + 1] === "\n") i++;
+        row.push(value);
+        rows.push(row);
+        row = [];
+        value = "";
+      } else {
+        value += char;
+      }
+    }
+
+    if (value !== "" || row.length > 0) {
+      row.push(value);
+      rows.push(row);
+    }
+
+    return rows;
+  }
+
+  // =====================================
+  // 단어 암기
+  // =====================================
+  function startNormalStudy() {
+    if (words.length === 0) {
+      alert("먼저 단어를 등록해 주세요.");
+      return;
+    }
+    studyMode = "normal";
+    studyWords = [...words];
+    startStudy();
+  }
+
+  function startWrongStudy() {
+    if (wrongWords.length === 0) {
+      alert("복습할 오답 단어가 없습니다.");
+      return;
+    }
+    studyMode = "wrong";
+    studyWords = wrongWords.map(item => ({ ...item }));
+    startStudy();
+  }
+
+  function startStudy() {
+    currentIndex = 0;
+    knowCount = 0;
+    dontKnowCount = 0;
+    updateStudyCount();
+
+    hideAllScreens();
+    document.getElementById("study-screen").style.display = "block";
+    document.getElementById("mode-title").textContent =
+      studyMode === "normal" ? "전체 단어 학습" : "⭐ 오답 단어 복습";
+
+    displayWord();
+  }
+
+  function displayWord() {
+    const currentWord = studyWords[currentIndex];
+    document.getElementById("word").textContent = currentWord.word;
+    document.getElementById("meaning").textContent = currentWord.meaning;
+    document.getElementById("meaning").style.display = "none";
+    document.getElementById("counter").textContent = `${currentIndex + 1} / ${studyWords.length}`;
+  }
+
+  function showMeaning() {
+    document.getElementById("meaning").style.display = "block";
+  }
+
+  function knowWord() {
+    knowCount++;
+    const currentWord = studyWords[currentIndex];
+
+    if (studyMode === "wrong") {
+      wrongWords = wrongWords.filter(
+        item => item.word.toLowerCase() !== currentWord.word.toLowerCase()
+      );
+      saveWrongWords();
+      updateHome();
+    }
+
+    nextWord();
+  }
+
+  function dontKnowWord() {
+    dontKnowCount++;
+    const currentWord = studyWords[currentIndex];
+
+    if (studyMode === "normal") {
+      addWrongWord(currentWord);
+    }
+
+    nextWord();
+  }
+
+  function addWrongWord(wordObject) {
+    const existingIndex = wrongWords.findIndex(
+      item => item.word.toLowerCase() === wordObject.word.toLowerCase()
+    );
+
+    if (existingIndex === -1) {
+      wrongWords.push({ word: wordObject.word, meaning: wordObject.meaning });
+    } else {
+      wrongWords[existingIndex].meaning = wordObject.meaning;
+    }
+
+    saveWrongWords();
+    updateHome();
+  }
+
+  function nextWord() {
+    updateStudyCount();
+    currentIndex++;
+
+    if (currentIndex >= studyWords.length) {
+      finishStudy();
+      return;
+    }
+
+    displayWord();
+  }
+
+  function updateStudyCount() {
+    document.getElementById("know-count").textContent = knowCount;
+    document.getElementById("dont-know-count").textContent = dontKnowCount;
+  }
+
+  function finishStudy() {
+    updateStudyCount();
+    alert(
+      "학습 완료!\n\n" +
+      `👍 알아요 : ${knowCount}개\n` +
+      `👎 몰라요 : ${dontKnowCount}개`
+    );
+    goHome();
+  }
+
+  // =====================================
+  // 객관식 테스트
+  // =====================================
+  function startQuiz() {
+    if (words.length < 4) {
+      alert("객관식 테스트를 위해 최소 4개의 단어가 필요합니다.");
+      return;
+    }
+
+    quizWords = shuffleArray([...words]);
+    quizIndex = 0;
+    quizCorrectCount = 0;
+    quizWrongCount = 0;
+
+    hideAllScreens();
+    document.getElementById("quiz-screen").style.display = "block";
+    updateQuizScore();
+    displayQuiz();
+  }
+
+  function displayQuiz() {
+    quizAnswered = false;
+    const currentWord = quizWords[quizIndex];
+
+    document.getElementById("quiz-word").textContent = currentWord.word;
+    document.getElementById("quiz-counter").textContent = `${quizIndex + 1} / ${quizWords.length}`;
+    document.getElementById("feedback").textContent = "";
+    document.getElementById("quiz-next-button").style.display = "none";
+
+    const optionArea = document.getElementById("option-area");
+    optionArea.innerHTML = "";
+
+    const wrongMeanings = [...new Set(
+      words
+        .filter(item => item.word.toLowerCase() !== currentWord.word.toLowerCase())
+        .map(item => item.meaning)
+        .filter(meaning => meaning !== currentWord.meaning)
+    )];
+
+    const options = shuffleArray([
+      currentWord.meaning,
+      ...shuffleArray(wrongMeanings).slice(0, 3)
+    ]);
+
+    options.forEach(option => {
+      const button = document.createElement("button");
+      button.className = "option-button";
+      button.textContent = option;
+      button.onclick = () => selectAnswer(option, button);
+      optionArea.appendChild(button);
+    });
+  }
+
+  function selectAnswer(selectedMeaning, clickedButton) {
+    if (quizAnswered) return;
+    quizAnswered = true;
+
+    const currentWord = quizWords[quizIndex];
+    const buttons = document.querySelectorAll(".option-button");
+
+    buttons.forEach(button => {
+      button.disabled = true;
+      if (button.textContent === currentWord.meaning) {
+        button.classList.add("correct");
+      }
+    });
+
+    if (selectedMeaning === currentWord.meaning) {
+      quizCorrectCount++;
+      document.getElementById("feedback").textContent = "✅ 정답입니다!";
+    } else {
+      quizWrongCount++;
+      clickedButton.classList.add("wrong");
+      document.getElementById("feedback").textContent = `❌ 틀렸습니다. 정답: ${currentWord.meaning}`;
+      addWrongWord(currentWord);
+    }
+
+    updateQuizScore();
+    document.getElementById("quiz-next-button").style.display = "block";
+  }
+
+  function nextQuiz() {
+    quizIndex++;
+    if (quizIndex >= quizWords.length) {
+      finishQuiz();
+      return;
+    }
+    displayQuiz();
+  }
+
+  function updateQuizScore() {
+    document.getElementById("quiz-correct-count").textContent = quizCorrectCount;
+    document.getElementById("quiz-wrong-count").textContent = quizWrongCount;
+  }
+
+  function finishQuiz() {
+    const score = Math.round((quizCorrectCount / quizWords.length) * 100);
+    alert(
+      "단어 테스트 완료!\n\n" +
+      `✅ 정답 : ${quizCorrectCount}개\n` +
+      `❌ 오답 : ${quizWrongCount}개\n\n` +
+      `점수 : ${score}점`
+    );
+    goHome();
+  }
+
+  function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+  }
+
+  // =====================================
+  // 오답노트
+  // =====================================
+  function openWrongNote() {
+    hideAllScreens();
+    document.getElementById("wrong-screen").style.display = "block";
+
+    const wrongList = document.getElementById("wrong-list");
+    const reviewButton = document.getElementById("review-button");
+    wrongList.innerHTML = "";
+
+    if (wrongWords.length === 0) {
+      wrongList.innerHTML = '<div class="empty-message">🎉 오답 단어가 없습니다.</div>';
+      reviewButton.style.display = "none";
+      return;
+    }
+
+    reviewButton.style.display = "block";
+
+    wrongWords.forEach(item => {
+      const box = document.createElement("div");
+      box.className = "wrong-item";
+
+      const wordDiv = document.createElement("div");
+      wordDiv.className = "wrong-word";
+      wordDiv.textContent = item.word;
+
+      const meaningDiv = document.createElement("div");
+      meaningDiv.className = "wrong-meaning";
+      meaningDiv.textContent = item.meaning;
+
+      box.appendChild(wordDiv);
+      box.appendChild(meaningDiv);
+      wrongList.appendChild(box);
+    });
+  }
+
+  // =====================================
+  // 화면 전환 / 첫 화면 갱신
+  // =====================================
+  function hideAllScreens() {
+    ["home-screen", "study-screen", "quiz-screen", "wrong-screen", "manage-screen"]
+      .forEach(id => document.getElementById(id).style.display = "none");
+  }
+
+  function goHome() {
+    hideAllScreens();
+    document.getElementById("home-screen").style.display = "block";
+    updateHome();
+  }
+
+  function updateHome() {
+    document.getElementById("total-count").textContent = `${words.length}개`;
+    document.getElementById("wrong-count").textContent = wrongWords.length;
+    document.getElementById("home-wrong-count").textContent = `${wrongWords.length}개`;
+  }
+
+  // =====================================
+  // 앱 시작
+  // =====================================
+  window.addEventListener("DOMContentLoaded", function() {
+    loadWords();
+    loadWrongWords();
+    updateHome();
+  });
+</script>
+
+</body>
+</html>
