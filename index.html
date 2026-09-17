@@ -35,6 +35,10 @@ button{font:inherit;border:0;border-radius:12px;padding:13px 15px;cursor:pointer
 .day-summary{background:#f6f8fc;border-radius:15px;padding:16px;margin-bottom:14px}
 .word-card{border:1px solid #e5e7eb;border-radius:20px;padding:24px 16px;margin:16px 0;background:#fff;min-height:210px;display:flex;flex-direction:column;justify-content:center;align-items:center}
 .word{font-size:40px;font-weight:800;word-break:break-word} .meaning{font-size:22px;margin-top:18px;color:#374151;display:none;line-height:1.5}
+.speak-button{background:#eef6ff;color:#2457a7;width:100%;font-weight:800;margin-top:10px;border:1px solid #cfe0ff}
+.speak-button:hover{background:#e2efff}
+.speaker-small{width:auto!important;min-width:44px;padding:8px 10px!important;margin:0!important;background:#eef6ff!important;color:#2457a7!important;border:1px solid #cfe0ff!important;border-radius:10px!important;font-weight:800}
+.row-actions{display:flex;gap:6px;align-items:center;margin-left:auto}
 .counter{color:var(--muted);font-size:14px} .feedback{min-height:28px;font-weight:800;margin-top:14px}
 .quiz-options{display:grid;gap:9px;margin-top:14px} .quiz-options button{background:#f4f6f9;text-align:left} .quiz-options button.correct{background:#def5e6;color:#177a41} .quiz-options button.wrong{background:#ffe2e2;color:#b92c2c}
 .word-list{display:grid;gap:8px;max-height:520px;overflow:auto;margin-top:12px} .word-row{display:flex;gap:10px;align-items:flex-start;text-align:left;background:#f7f8fb;border-radius:12px;padding:11px 12px} .word-row .n{width:30px;color:#9ca3af} .word-row .en{font-weight:800;min-width:120px} .word-row .ko{color:#4b5563;flex:1}
@@ -103,6 +107,7 @@ button{font:inherit;border:0;border-radius:12px;padding:13px 15px;cursor:pointer
   <div class="counter" id="study-counter"></div>
   <div class="progress-wrap"><div class="progress-bar"><div id="study-progress" class="progress-fill"></div></div></div>
   <div class="word-card"><div class="word" id="study-word"></div><div class="meaning" id="study-meaning"></div></div>
+  <button class="speak-button" onclick="speakStudyWord()">🔊 영어 발음 듣기</button>
   <button class="secondary" onclick="toggleMeaning()">뜻 보기 / 숨기기</button>
   <div class="actions"><button class="green" onclick="rateWord(true)">👍 알아요</button><button class="red" onclick="rateWord(false)">👎 몰라요</button></div>
   <div class="small" id="study-score"></div>
@@ -112,6 +117,7 @@ button{font:inherit;border:0;border-radius:12px;padding:13px 15px;cursor:pointer
   <div class="topbar"><button class="gray" onclick="openDay(currentDay)">←</button><h2 id="quiz-title">단어 테스트</h2><button class="gray" onclick="showScreen('home')">홈</button></div>
   <div class="counter" id="quiz-counter"></div>
   <div class="word-card" style="min-height:140px"><div class="word" id="quiz-word"></div></div>
+  <button class="speak-button" onclick="speakQuizWord()">🔊 영어 발음 듣기</button>
   <div id="quiz-options" class="quiz-options"></div>
   <div class="feedback" id="quiz-feedback"></div>
   <button id="quiz-next" class="primary" style="display:none" onclick="nextQuiz()">다음 문제 →</button>
@@ -134,6 +140,7 @@ button{font:inherit;border:0;border-radius:12px;padding:13px 15px;cursor:pointer
   <div class="topbar"><button class="gray" onclick="openWrong()">←</button><h2>🔄 오답 재학습</h2><button class="gray" onclick="showScreen('home')">홈</button></div>
   <div class="counter" id="wrong-counter"></div>
   <div class="word-card"><div class="word" id="wrong-word"></div><div class="meaning" id="wrong-meaning"></div></div>
+  <button class="speak-button" onclick="speakWrongStudyWord()">🔊 영어 발음 듣기</button>
   <button class="secondary" onclick="toggleWrongMeaning()">뜻 보기 / 숨기기</button>
   <div class="actions"><button class="green" onclick="rateWrong(true)">👍 이제 알아요</button><button class="red" onclick="rateWrong(false)">👎 아직 몰라요</button></div>
 </section>
@@ -211,6 +218,45 @@ function openDay(dayIndex){if(dayIndex<0||dayIndex>=getTotalSets())return;curren
 function moveDay(delta){openDay(currentDay+delta);}
 function markCurrentDayComplete(){if(!completedDays.includes(currentDay)){completedDays.push(currentDay);completedDays.sort((a,b)=>a-b);saveProgress();}openDay(currentDay);}
 
+
+// =====================================
+// 영어 발음 듣기 (Web Speech API)
+// =====================================
+function getEnglishVoice(){
+  if(!('speechSynthesis' in window)) return null;
+  const voices=window.speechSynthesis.getVoices();
+  return voices.find(v=>/^en-US$/i.test(v.lang))
+      || voices.find(v=>/^en-US/i.test(v.lang))
+      || voices.find(v=>/^en/i.test(v.lang))
+      || null;
+}
+function speakWord(text){
+  const word=String(text||'').trim();
+  if(!word)return;
+  if(!('speechSynthesis' in window)){
+    alert('이 브라우저에서는 음성 발음 기능을 지원하지 않습니다. Chrome, Edge 또는 Safari 최신 버전을 사용해 주세요.');
+    return;
+  }
+  window.speechSynthesis.cancel();
+  const utterance=new SpeechSynthesisUtterance(word);
+  utterance.lang='en-US';
+  utterance.rate=0.85;
+  utterance.pitch=1;
+  utterance.volume=1;
+  const voice=getEnglishVoice();
+  if(voice)utterance.voice=voice;
+  window.speechSynthesis.speak(utterance);
+}
+function speakStudyWord(){
+  if(studyList[studyIndex])speakWord(studyList[studyIndex].word);
+}
+function speakQuizWord(){
+  if(quizList[quizIndex])speakWord(quizList[quizIndex].word);
+}
+function speakWrongStudyWord(){
+  if(wrongStudyList[wrongStudyIndex])speakWord(wrongStudyList[wrongStudyIndex].word);
+}
+
 function startStudyForDay(){studyList=getDayWords(currentDay).slice();studyIndex=0;studyKnow=0;studyDont=0;document.getElementById('study-title').textContent='Day '+(currentDay+1)+' 암기';showScreen('study');renderStudy();}
 function renderStudy(){if(studyIndex>=studyList.length){finishStudy();return;}const w=studyList[studyIndex];document.getElementById('study-word').textContent=w.word;const m=document.getElementById('study-meaning');m.textContent=w.meaning;m.style.display='none';document.getElementById('study-counter').textContent=`${studyIndex+1} / ${studyList.length}`;document.getElementById('study-progress').style.width=((studyIndex)/studyList.length*100)+'%';document.getElementById('study-score').textContent=`알아요 ${studyKnow} · 몰라요 ${studyDont}`;}
 function toggleMeaning(){const el=document.getElementById('study-meaning');el.style.display=el.style.display==='block'?'none':'block';}
@@ -229,10 +275,92 @@ function finishQuiz(){const score=Math.round(quizCorrect/quizList.length*100);al
 정답 ${quizCorrect}개 · 오답 ${quizWrong}개
 점수 ${score}점`);if(!completedDays.includes(currentDay)){completedDays.push(currentDay);completedDays.sort((a,b)=>a-b);saveProgress();}openDay(currentDay);}
 
-function showDayList(){const list=getDayWords(currentDay);document.getElementById('list-title').textContent='Day '+(currentDay+1)+' · '+list.length+'단어';const box=document.getElementById('word-list');box.innerHTML='';list.forEach((w,i)=>{const row=document.createElement('div');row.className='word-row';row.innerHTML=`<div class="n">${i+1}</div><div class="en">${escapeHtml(w.word)}</div><div class="ko">${escapeHtml(w.meaning)}</div>`;box.appendChild(row);});showScreen('list');}
+function showDayList(){
+  const list=getDayWords(currentDay);
+  document.getElementById('list-title').textContent='Day '+(currentDay+1)+' · '+list.length+'단어';
+  const box=document.getElementById('word-list');
+  box.innerHTML='';
+  list.forEach((w,i)=>{
+    const row=document.createElement('div');
+    row.className='word-row';
+
+    const n=document.createElement('div');
+    n.className='n';
+    n.textContent=i+1;
+
+    const en=document.createElement('div');
+    en.className='en';
+    en.textContent=w.word;
+
+    const ko=document.createElement('div');
+    ko.className='ko';
+    ko.textContent=w.meaning;
+
+    const speak=document.createElement('button');
+    speak.className='speaker-small';
+    speak.type='button';
+    speak.textContent='🔊';
+    speak.title=w.word+' 발음 듣기';
+    speak.setAttribute('aria-label',w.word+' 발음 듣기');
+    speak.onclick=()=>speakWord(w.word);
+
+    row.appendChild(n);
+    row.appendChild(en);
+    row.appendChild(ko);
+    row.appendChild(speak);
+    box.appendChild(row);
+  });
+  showScreen('list');
+}
 function addWrong(w){if(!wrongWords.some(x=>x.word.toLowerCase()===w.word.toLowerCase())){wrongWords.push({word:w.word,meaning:w.meaning});saveWrong();}}
 function removeWrong(word){const n=wrongWords.length;wrongWords=wrongWords.filter(x=>x.word.toLowerCase()!==word.toLowerCase());if(wrongWords.length!==n)saveWrong();}
-function openWrong(){const box=document.getElementById('wrong-list');box.innerHTML='';if(!wrongWords.length)box.innerHTML='<p class="subtitle">🎉 현재 오답 단어가 없습니다.</p>';wrongWords.forEach(w=>{const row=document.createElement('div');row.className='wrong-row';row.innerHTML=`<div><strong>${escapeHtml(w.word)}</strong><span>${escapeHtml(w.meaning)}</span></div><button class="gray" style="width:auto" data-word="${escapeAttr(w.word)}">삭제</button>`;row.querySelector('button').onclick=()=>{removeWrong(w.word);openWrong();};box.appendChild(row);});showScreen('wrong');}
+function openWrong(){
+  const box=document.getElementById('wrong-list');
+  box.innerHTML='';
+  if(!wrongWords.length){
+    box.innerHTML='<p class="subtitle">🎉 현재 오답 단어가 없습니다.</p>';
+  }
+
+  wrongWords.forEach(w=>{
+    const row=document.createElement('div');
+    row.className='wrong-row';
+
+    const text=document.createElement('div');
+    const strong=document.createElement('strong');
+    strong.textContent=w.word;
+    const meaning=document.createElement('span');
+    meaning.textContent=w.meaning;
+    text.appendChild(strong);
+    text.appendChild(meaning);
+
+    const actions=document.createElement('div');
+    actions.className='row-actions';
+
+    const speak=document.createElement('button');
+    speak.className='speaker-small';
+    speak.type='button';
+    speak.textContent='🔊';
+    speak.title=w.word+' 발음 듣기';
+    speak.setAttribute('aria-label',w.word+' 발음 듣기');
+    speak.onclick=()=>speakWord(w.word);
+
+    const del=document.createElement('button');
+    del.className='gray';
+    del.type='button';
+    del.style.width='auto';
+    del.style.margin='0';
+    del.textContent='삭제';
+    del.onclick=()=>{removeWrong(w.word);openWrong();};
+
+    actions.appendChild(speak);
+    actions.appendChild(del);
+    row.appendChild(text);
+    row.appendChild(actions);
+    box.appendChild(row);
+  });
+
+  showScreen('wrong');
+}
 function clearWrong(){if(confirm('오답노트를 모두 비울까요?')){wrongWords=[];saveWrong();openWrong();}}
 function startWrongStudy(){if(!wrongWords.length){alert('복습할 오답 단어가 없습니다.');return;}wrongStudyList=wrongWords.map(x=>({...x}));wrongStudyIndex=0;showScreen('wrong-study');renderWrongStudy();}
 function renderWrongStudy(){if(wrongStudyIndex>=wrongStudyList.length){alert('오답 재학습을 마쳤습니다.');openWrong();return;}const w=wrongStudyList[wrongStudyIndex];document.getElementById('wrong-counter').textContent=`${wrongStudyIndex+1} / ${wrongStudyList.length}`;document.getElementById('wrong-word').textContent=w.word;const m=document.getElementById('wrong-meaning');m.textContent=w.meaning;m.style.display='none';}
